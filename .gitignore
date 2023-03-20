@@ -1,0 +1,12 @@
+node_modules
+top-50-token-holders
+.env
+coverage
+coverage.json
+typechain
+typechain-types
+
+# Hardhat files
+cache
+artifacts
+

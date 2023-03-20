@@ -1,0 +1,28 @@
+{
+  "name": "scarab",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.42.4",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@openzeppelin/subgraphs": "^0.1.8-5",
+    "chai": "^4.3.7",
+    "dotenv": "^16.0.3",
+    "ethers": "^5.0.0",
+    "hardhat": "^2.13.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
+    "@nomiclabs/hardhat-ethers": "^2.2.2",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@openzeppelin/contracts": "^4.8.2",
+    "hardhat-deploy": "^0.11.25"
+  }
+}
