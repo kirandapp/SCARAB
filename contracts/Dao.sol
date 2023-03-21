@@ -79,9 +79,11 @@ contract Dao is Ownable{
         return proposalCounter;
     }
 
-    function vote(uint256 nftId, uint256 proposalId, bool voteFor) public {
+    function vote(uint256 proposalId, bool voteFor) public {
         Proposal storage p = proposals[proposalId];
-        require(nft.ownerOf(nftId) != address(0), "You must own an NFT to vote");
+        uint256 balance = token.balanceOf(msg.sender);
+        require(balance > 0, "You have no tokens to vote with.");
+        // require(nft.ownerOf(nftId) != address(0), "You must own an NFT to vote");
         require(!p.voters[msg.sender], "You already voted");
         p.voters[msg.sender] = true;
         if (voteFor) {

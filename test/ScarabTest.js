@@ -90,7 +90,7 @@ describe("Scarab DAO", async () => {
         console.log("After- owner balance :- ",await owner.getBalance());
     });
     it("4. transfer fund from treaury to Dao", async () => {
-        let { scarabContract, router, owner, treasuryContract, addr1, daoContract, nftContract, WETH } = await loadFixture(deployFixture);
+        let { scarabContract, router, owner, treasuryContract, addr1, addr2, daoContract, nftContract, WETH } = await loadFixture(deployFixture);
         await scarabContract.setTreasuryAddress(treasuryContract.address);
         await scarabContract.transfer(treasuryContract.address, BigNumber.from("4000000000000000000"));
         console.log("scarab balance Treasury:- ",await scarabContract.balanceOf(treasuryContract.address));
@@ -111,6 +111,7 @@ describe("Scarab DAO", async () => {
         // treasuryContract.executeSwap();
         // console.log("Treasury Balance:-", await ethers.provider.getBalance(treasuryContract.address));
         await scarabContract.mint(addr1.address, 100);
+        await scarabContract.mint(addr2.address, 100);
         console.log("3.1");
         await scarabContract.setWhitelistAddress(nftContract.address, true);
         console.log("3.1");
@@ -127,7 +128,7 @@ describe("Scarab DAO", async () => {
         console.log("3.3");
         daoContract.connect(addr1).createProposal('gggg',addr1.address,'pppp','dddd',10000);
         console.log("3.4");
-        await daoContract.connect(addr1).vote(1, 1, true);
+        await daoContract.connect(addr2).vote(1, true);
         console.log("3.5");
         await network.provider.send("evm_increaseTime", [120]);
         console.log("Before- contract balance :- ",await ethers.provider.getBalance(addr1.address));
