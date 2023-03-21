@@ -3,7 +3,8 @@
 
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Scarab is ERC20, Ownable {
@@ -36,7 +37,6 @@ contract Scarab is ERC20, Ownable {
 
     function setWhitelistAddress(address _whitelist, bool _status) external onlyOwner{
         require(_whitelist != address(0), "setWhitelistAddress: Zero address");
-        whitelistedAddress[_whitelist] = _status;
         emit WhitelistAddressUpdated(_whitelist, _status);
     }
 
