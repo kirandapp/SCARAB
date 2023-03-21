@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "hardhat/console.sol";
 
 contract ScarabNft is ERC721 {
     IERC20 public tokenContract;
@@ -27,11 +28,15 @@ contract ScarabNft is ERC721 {
     }
 
     function redeemNft(uint256 _nftId) public {
+        console.log("18");
         require(_exists(_nftId), "NFT does not exist");
-        // address owner = ownerOf(_nftId);
+        console.log("19");
         require(msg.sender == ownerOf(_nftId), "Only the owner can redeem the NFT");
+        console.log("20");
         tokenContract.transfer(msg.sender, nftConversionRate);
+        console.log("21");
         _burn(_nftId);
+        console.log("22");
         emit NFTRedeemedForTokens(msg.sender, nftConversionRate, _nftId);
     }
 }

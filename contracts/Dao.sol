@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "hardhat/console.sol";
 
 
 contract Dao is Ownable{
@@ -76,15 +77,24 @@ contract Dao is Ownable{
     }
 
     function executeProposal(uint256 proposalId) public onlyOwner{
+        console.log("6");
         Proposal storage p = proposals[proposalId];
+        console.log("7");
         require(block.timestamp >= p.endTimestamp, "Voting is still ongoing");
+        console.log("8");
         require(!p.executed, "Proposal already executed");
+        console.log("9");
         require(p.votesFor > p.votesAgainst, "Proposal did not pass");
+        console.log("10");
         Treasury treasure = Treasury(treasury);
+        console.log("11");
         p.executed = true;
+        console.log("12");
         // treasure.fundTransfer(p.recipient, p.value);
         (bool success, ) = address(treasure).call{value: 0}(abi.encodeWithSignature("fundTransfer(address,uint256)", p.recipient, p.value));
+        console.log("16");
         require(success, "Treasury fund transfer failed");
+        console.log("17");
         emit ProposalExecuted(proposalId);
     }
 }

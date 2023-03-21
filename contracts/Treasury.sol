@@ -37,7 +37,7 @@ contract Treasury is Ownable, ReentrancyGuard
     receive() external payable {}
 
     function executeSwap() public nonReentrant{
-        console.log("1");
+        console.log("13");
         address[] memory path = new address[](2);
         path[0] = address(scarab);
         path[1] = weth;
@@ -49,9 +49,9 @@ contract Treasury is Ownable, ReentrancyGuard
             address(this),
             block.timestamp + 300
         );
-        console.log("2");
+        console.log("14");
         emit SwapComplete(address(this).balance);
-        console.log("2");
+        console.log("15");
     }     
 
     function fundTransfer(address _proposeeAdd, uint256 ethAmount) external {
