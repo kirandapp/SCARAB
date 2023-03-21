@@ -108,27 +108,34 @@ describe("Scarab DAO", async () => {
                 value: ethers.utils.parseEther("10")
             }
         );
-        treasuryContract.executeSwap();
-        console.log("Treasury Balance:-", await ethers.provider.getBalance(treasuryContract.address));
-        await scarabContract.mint(addr1.address, 210);
+        // treasuryContract.executeSwap();
+        // console.log("Treasury Balance:-", await ethers.provider.getBalance(treasuryContract.address));
+        await scarabContract.mint(addr1.address, 100);
         console.log("3.1");
-        console.log(await scarabContract.balanceOf(addr1.address));
-        await scarabContract.connect(addr1).approve(nftContract.address, 210);
+        await scarabContract.setWhitelistAddress(nftContract.address, true);
+        console.log("3.1");
+        console.log("before covert- scarab balance of addr1 : ",await scarabContract.connect(addr1).balanceOf(addr1.address));
+        await scarabContract.connect(addr1).approve(nftContract.address, 100);
         console.log("3.1.1");
-        await nftContract.connect(addr1).convertTokenToNft(100, { gasLimit: 500000, });
+        await nftContract.connect(addr1).lockTokensAnsMintNft(100, { gasLimit: 500000, });
+        console.log("after covert- scarab balance of addr1 : ",await scarabContract.connect(addr1).balanceOf(addr1.address));
+        console.log("after covert- scarab balance of nftcontract : ",await scarabContract.connect(owner).balanceOf(nftContract.address));
         
         console.log("3.2");
-        // expect(await nftContract.ownerOf(1)).to.equal(addr1.address);
+        expect(await nftContract.connect(addr1).ownerOf(1)).to.equal(addr1.address);
+        expect(await nftContract.connect(addr1).balanceOf(addr1.address)).to.equal(1);
         console.log("3.3");
-        daoContract.createProposal('gggg',addr1.address,'pppp','dddd',10000);
+        daoContract.connect(addr1).createProposal('gggg',addr1.address,'pppp','dddd',10000);
         console.log("3.4");
         await daoContract.connect(addr1).vote(1, 1, true);
         console.log("3.5");
         await network.provider.send("evm_increaseTime", [120]);
         console.log("Before- contract balance :- ",await ethers.provider.getBalance(addr1.address));
-        await daoContract.executeProposal(1);
+        await daoContract.executeProposal(1,{ gasLimit: 500000, });
+        console.log("dao contract eth bal : a",await WETH.balanceOf(treasuryContract.address));
         console.log("After- contract balance :- ",await ethers.provider.getBalance(addr1.address));
 
-        // await nftContract.connect(addr1).redeemNft(1, { gasLimit: 500000, });
+        await nftContract.connect(addr1).withdrawNft(1, { gasLimit: 500000, });
+        console.log("after- scarab balance of addr1 : ",await scarabContract.connect(addr1).balanceOf(addr1.address));
     });
 }); 

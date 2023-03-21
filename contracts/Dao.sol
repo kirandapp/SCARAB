@@ -17,8 +17,11 @@ contract Dao is Ownable{
     address payable public treasury;
 
     uint256 public proposalCounter = 0;
-    uint256 public maxProposalValue = 2000000000000000000; //2eth //20000000000000000000; // 20 ETH
-    uint256 public votingTime = 120; // 2 minutes //86400; // 1 day in seconds
+    // uint256 public maxProposalValue = 2000000000000000000; //2eth //20000000000000000000; // 20 ETH
+    uint256 public minVotingTime = 120; // 2 minutes in seconds
+    uint256 public maxVotingTime = 86400; //1 day in seconds
+    uint256 public MIN_PROPOSAL_THRESHOLD;
+    uint256 public MAX_PROPOSAL_THRESHOLD = 20 ether;
 
     event NewProposal(uint256 indexed id, string guardianName, address payable recipient, string projectName, string description, uint256 value, uint256 startTimestamp, uint256 endTimestamp);
     event Vote(uint256 indexed proposalId, address indexed voter, bool voteFor);
@@ -46,8 +49,21 @@ contract Dao is Ownable{
         treasury = _treasury;
     }
 
+    function setMinProposalThreshold(uint256 _eth) external onlyOwner {
+        MIN_PROPOSAL_THRESHOLD = _eth;
+    }
+    function setMaxProposalThreshold(uint256 _eth) external onlyOwner {
+        MAX_PROPOSAL_THRESHOLD = _eth;
+    }
+    function setMinVotingTime(uint256 _minTime) external onlyOwner {
+        minVotingTime = _minTime;
+    }
+    function setMaxVotingTime(uint256 _maxTime) external onlyOwner {
+        maxVotingTime = _maxTime;
+    }
     function createProposal(string memory guardianName, address payable recipient, string memory projectName, string memory description, uint256 value) public returns (uint256) {
-        require(value <= maxProposalValue, "Proposal value too high");
+        require(value <= MAX_PROPOSAL_THRESHOLD, "Proposal value too high");
+        
         proposalCounter++;
         Proposal storage p = proposals[proposalCounter];
         p.id = proposalCounter;
@@ -58,7 +74,7 @@ contract Dao is Ownable{
         p.value = value;        
         p.executed = false;
         p.startTimestamp = block.timestamp;
-        p.endTimestamp = block.timestamp + votingTime;
+        p.endTimestamp = block.timestamp + minVotingTime;
         emit NewProposal(proposalCounter, guardianName, recipient, projectName, description, value, p.startTimestamp, p.endTimestamp);
         return proposalCounter;
     }

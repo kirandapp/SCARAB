@@ -17,7 +17,7 @@ contract ScarabNft is ERC721 {
         tokenContract = IERC20(_tokenContract);
     }
 
-    function convertTokenToNft(uint256 _amount) public {
+    function lockTokensAnsMintNft(uint256 _amount) public {
         require(tokenContract.balanceOf(msg.sender) >= _amount,"Insufficient Balance");
         require(_amount >= nftConversionRate,"Insufficient tokens to convert to Nft");
         uint256 nftId = _totalSupply + 1;
@@ -27,7 +27,7 @@ contract ScarabNft is ERC721 {
         emit TokensConvertedToNFT(msg.sender, _amount, nftId);
     }
 
-    function redeemNft(uint256 _nftId) public {
+    function withdrawNft(uint256 _nftId) public {
         console.log("18");
         require(_exists(_nftId), "NFT does not exist");
         console.log("19");
