@@ -17,7 +17,7 @@ contract ScarabNft is ERC721 {
         tokenContract = IERC20(_tokenContract);
     }
 
-    function lockTokensAnsMintNft(uint256 _amount) public {
+    function lockTokensAndMintNft(uint256 _amount) public {
         require(tokenContract.balanceOf(msg.sender) >= _amount,"Insufficient Balance");
         require(_amount >= nftConversionRate,"Insufficient tokens to convert to Nft");
         uint256 nftId = _totalSupply + 1;

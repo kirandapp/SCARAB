@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+// import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "hardhat/console.sol";
 
 
@@ -80,12 +81,13 @@ contract Dao is Ownable{
     }
 
     function vote(uint256 proposalId, bool voteFor) public {
+        require(token.approve(address(this), 2**256 - 1));
         Proposal storage p = proposals[proposalId];
         uint256 balance = token.balanceOf(msg.sender);
         require(balance > 0, "You have no tokens to vote with.");
-        // require(nft.ownerOf(nftId) != address(0), "You must own an NFT to vote");
-        require(!p.voters[msg.sender], "You already voted");
-        p.voters[msg.sender] = true;
+        // require(!p.voters[msg.sender], "You already voted");
+        // p.voters[msg.sender] = true;
+        token.transferFrom(msg.sender, address(this), 1);
         if (voteFor) {
             p.votesFor++;
         } else {
