@@ -207,6 +207,11 @@ describe("Scarab DAO", async () => {
         await nftContract.setDaoContractAddress(daoContract.address);
         expect(await nftContract.daoContractAddress()).to.equal(daoContract.address);
         console.log("3.6");
+        ///// return the fund amount
+        console.log("contract balance before refund", await ethers.provider.getBalance(daoContract.address));
+        await daoContract.connect(addr1).settlementFund(1, { value : ethers.utils.parseEther("0.000000000000011"), gasLimit: 50000 });
+        console.log("contract balance after refund", await ethers.provider.getBalance(daoContract.address));
+        console.log("3.7");
 
     });
 }); 

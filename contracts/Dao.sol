@@ -130,4 +130,17 @@ contract Dao is Ownable{
         console.log("17");
         emit ProposalExecuted(proposalId);
     }
+
+    function settlementFund(uint256 _proposalId) public payable {
+        Proposal storage p = proposals[_proposalId];
+        require(msg.sender == p.recipient, "You are not the proposee of this proposal");
+        uint256 refund = calculateRefund(p.value);
+        require(msg.value >= refund, "Not enough amount");
+        // (bool success, ) = payable(address(this)).call{value: msg.value}("");
+        // require(success, "Transfer Failed!");
+    }
+    function calculateRefund(uint256 _value) internal pure returns (uint256) {
+        _value += _value * 5 / 100;
+        return _value;
+    }
 }

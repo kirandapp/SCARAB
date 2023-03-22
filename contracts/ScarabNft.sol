@@ -36,6 +36,7 @@ contract ScarabNft is ERC721, Ownable {
     }
 
     function unlockTokens(uint256 _nftId) public {
+        //TODO check the nftId holder doesn't have any active proposal
         console.log("18");
         require(_exists(_nftId), "NFT does not exist");
         console.log("19");
