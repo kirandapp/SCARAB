@@ -3,18 +3,26 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 
-contract ScarabNft is ERC721 {
+contract ScarabNft is ERC721, Ownable {
     IERC20 public tokenContract;
     uint256 public nftConversionRate = 100;
     uint256 private _totalSupply;
+    address public daoContractAddress;
 
     event TokensConvertedToNFT(address from, uint256 tokenAmount, uint256 NftId);
     event NFTRedeemedForTokens(address from, uint256 tokenAmount, uint256 NftId);
 
     constructor(address _tokenContract) ERC721("ScarabNft","SCRBNFT") {
         tokenContract = IERC20(_tokenContract);
+    }
+
+    function setDaoContractAddress(address _daoContract) public onlyOwner {
+        // require(isContract(_daoContract), "address must be a contract");
+        require(_daoContract.code.length > 0,"Address must be a Contract");
+        daoContractAddress = _daoContract;
     }
 
     function lockTokensAndMintNft(uint256 _amount) public {
@@ -27,7 +35,7 @@ contract ScarabNft is ERC721 {
         emit TokensConvertedToNFT(msg.sender, _amount, nftId);
     }
 
-    function withdrawNft(uint256 _nftId) public {
+    function unlockTokens(uint256 _nftId) public {
         console.log("18");
         require(_exists(_nftId), "NFT does not exist");
         console.log("19");

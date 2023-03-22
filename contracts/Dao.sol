@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-// import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "hardhat/console.sol";
 
 
@@ -23,6 +22,7 @@ contract Dao is Ownable{
     uint256 public maxVotingTime = 86400; //1 day in seconds
     uint256 public MIN_PROPOSAL_THRESHOLD;
     uint256 public MAX_PROPOSAL_THRESHOLD = 20 ether;
+    uint256 public voteWeight = 5;
 
     event NewProposal(uint256 indexed id, string guardianName, address payable recipient, string projectName, string description, uint256 value, uint256 startTimestamp, uint256 endTimestamp);
     event Vote(uint256 indexed proposalId, address indexed voter, bool voteFor);
@@ -62,6 +62,10 @@ contract Dao is Ownable{
     function setMaxVotingTime(uint256 _maxTime) external onlyOwner {
         maxVotingTime = _maxTime;
     }
+    function setVoteWeight(uint256 _voteWeight) public onlyOwner {
+        voteWeight = _voteWeight;
+    }
+
     function createProposal(string memory guardianName, address payable recipient, string memory projectName, string memory description, uint256 value) public returns (uint256) {
         require(value <= MAX_PROPOSAL_THRESHOLD, "Proposal value too high");
         
@@ -84,16 +88,25 @@ contract Dao is Ownable{
         require(token.approve(address(this), 2**256 - 1));
         Proposal storage p = proposals[proposalId];
         uint256 balance = token.balanceOf(msg.sender);
-        require(balance > 0, "You have no tokens to vote with.");
-        // require(!p.voters[msg.sender], "You already voted");
-        // p.voters[msg.sender] = true;
-        token.transferFrom(msg.sender, address(this), 1);
+        require(balance >= 5, "You don't have enough tokens to vote.");
+        require(!p.voters[msg.sender], "You already voted");
+        p.voters[msg.sender] = true;
+        // token.transferFrom(msg.sender, address(this), 1);
         if (voteFor) {
             p.votesFor++;
         } else {
             p.votesAgainst++;
         }
         emit Vote(proposalId, msg.sender, voteFor);
+    }
+
+    function getVoteforProposal(address _voter, uint256 _proposalId) public view returns (bool) {
+        Proposal storage p = proposals[_proposalId];
+        require(p.voters[_voter], "Not voted yet!");
+        if (p.votesFor == 0)
+            return false;
+        else
+            return true;
     }
 
     function executeProposal(uint256 proposalId) public onlyOwner{
