@@ -24,17 +24,18 @@ contract Dao is Ownable{
     uint256 public MAX_PROPOSAL_THRESHOLD = 20 ether;
     uint256 public voteWeight = 5;
 
-    event NewProposal(uint256 indexed id, string guardianName, address payable recipient, string projectName, string description, uint256 value, uint256 startTimestamp, uint256 endTimestamp);
+    event NewProposal(uint256 indexed id, uint256 guardianId, address payable recipient, string projectName, string description, uint256 value, uint256 refundTime, uint256 startTimestamp, uint256 endTimestamp);
     event Vote(uint256 indexed proposalId, address indexed voter, bool voteFor);
     event ProposalExecuted(uint256 indexed proposalId);
 
     struct Proposal {
         uint256 id; //proposal counter is the id
-        string guardianName;    //Name of the Guardian
+        uint256 guardianId;    //Name of the Guardian
         address payable recipient;  //Guardian Wallet address
         string projectName; //Name of the project
         string description; //project description
-        uint256 value;  //fund value    
+        uint256 value;  //fund value  
+        uint256 refundTime; //time of return the given value  
         bool executed;  //passed proposal
         uint256 votesFor;   //counter track for favor votes
         uint256 votesAgainst;   //counter track for against votes
@@ -43,6 +44,26 @@ contract Dao is Ownable{
         mapping(address => bool) voters;    //keep track of which guardian vote for proposal
     }
     mapping(uint256 => Proposal) public proposals;
+
+    ////////////////// Judgement structure
+    struct SuspectedGuardian {
+        uint256 nftId;
+        uint256 proposalId;
+        bool isGuardianPunished;
+        string explanation;
+        // uint256 lockedTokens; // amount of tokens locked by the guardian
+        bool isSuspected; // whether the guardian is suspected of proposal malpractice
+        uint256 votesForGuardian;   //counter track for favor votes
+        uint256 votesAgainstGuardian;
+        uint256 startTimestamp; //timestamp for when the proposal was created
+        uint256 endTimestamp;   //timestamp for when the voting period of proposal end
+        mapping(address => bool) judgementVoters;    //keep track of which guardian vote for proposal
+    }
+    mapping(uint256 => SuspectedGuardian) public judgementProposals;
+    
+    event JudgmentProposed(uint256 indexed callerNftId, uint256 indexed guardianNftId, uint256 indexed proposalId, string explanation);
+    event JudgmentVoted(uint256 indexed callerNftId, uint256 indexed guardianNftId, bool indexed votesForSupport);
+    
 
     constructor(address _token, address _nft, address payable _treasury) {
         token = IERC20(_token);
@@ -66,32 +87,37 @@ contract Dao is Ownable{
         voteWeight = _voteWeight;
     }
 
-    function createProposal(string memory guardianName, address payable recipient, string memory projectName, string memory description, uint256 value) public returns (uint256) {
+    function createProposal(uint256 guardianId, address payable recipient, string memory projectName, string memory description, uint256 value, uint256 refundTime) public returns (uint256) {
+        // require(nft.isGuardian[guardianId],"only guardian can create proposal"]);
+        //TODO only guardian can create proposal
         require(value <= MAX_PROPOSAL_THRESHOLD, "Proposal value too high");
-        
         proposalCounter++;
         Proposal storage p = proposals[proposalCounter];
         p.id = proposalCounter;
-        p.guardianName = guardianName;
+        p.guardianId = guardianId;
         p.recipient = recipient;
         p.projectName = projectName;
         p.description = description;
         p.value = value;        
+        p.refundTime = block.timestamp + refundTime;
         p.executed = false;
         p.startTimestamp = block.timestamp;
         p.endTimestamp = block.timestamp + minVotingTime;
-        emit NewProposal(proposalCounter, guardianName, recipient, projectName, description, value, p.startTimestamp, p.endTimestamp);
+        emit NewProposal(proposalCounter, guardianId, recipient, projectName, description, value, refundTime, p.startTimestamp, p.endTimestamp);
         return proposalCounter;
     }
 
     function vote(uint256 proposalId, bool voteFor) public {
-        require(token.approve(address(this), 2**256 - 1));
+        console.log("v1");
+        require(proposalId <= proposalCounter, "Proposal Id doesn't exist!");
+        console.log("v1");
         Proposal storage p = proposals[proposalId];
+        console.log("v1");
+        require(!p.executed, "Proposal is executed.");
         uint256 balance = token.balanceOf(msg.sender);
         require(balance >= 5, "You don't have enough tokens to vote.");
         require(!p.voters[msg.sender], "You already voted");
         p.voters[msg.sender] = true;
-        // token.transferFrom(msg.sender, address(this), 1);
         if (voteFor) {
             p.votesFor++;
         } else {
@@ -101,6 +127,7 @@ contract Dao is Ownable{
     }
 
     function getVoteforProposal(address _voter, uint256 _proposalId) public view returns (bool) {
+        require(_proposalId <= proposalCounter, "Proposal Id doesn't exist!");
         Proposal storage p = proposals[_proposalId];
         require(p.voters[_voter], "Not voted yet!");
         if (p.votesFor == 0)
@@ -111,6 +138,7 @@ contract Dao is Ownable{
 
     function executeProposal(uint256 proposalId) public onlyOwner{
         console.log("6");
+        require(proposalId <= proposalCounter, "Proposal Id doesn't exist!");
         Proposal storage p = proposals[proposalId];
         console.log("7");
         require(block.timestamp >= p.endTimestamp, "Voting is still ongoing");
@@ -132,15 +160,63 @@ contract Dao is Ownable{
     }
 
     function settlementFund(uint256 _proposalId) public payable {
+        require(_proposalId <= proposalCounter, "Proposal Id doesn't exist!");
         Proposal storage p = proposals[_proposalId];
         require(msg.sender == p.recipient, "You are not the proposee of this proposal");
-        uint256 refund = calculateRefund(p.value);
-        require(msg.value >= refund, "Not enough amount");
+        require(block.timestamp < p.refundTime, "refund time has gone!!");
+        // uint256 refund = calculateRefund(p.value);
+        require(msg.value >= p.value, "Not enough amount");
         // (bool success, ) = payable(address(this)).call{value: msg.value}("");
         // require(success, "Transfer Failed!");
     }
-    function calculateRefund(uint256 _value) internal pure returns (uint256) {
-        _value += _value * 5 / 100;
-        return _value;
+    // function calculateRefund(uint256 _value) internal pure returns (uint256) {
+    //     _value += _value * 5 / 100;
+    //     return _value;
+    // }
+    ////////////////////////////////// JUDGEMENT ////////////////////////////////////
+
+    
+    
+    function proposeJudgment(uint256 _guardianId, uint256 proposalId, string calldata explanation) public {
+        SuspectedGuardian storage j = judgementProposals [_guardianId];
+        Proposal storage p = proposals[proposalId];
+        // require(nft.isGuardian[_guardianId],"guardian not exist!!");
+        uint256 callerGuardianId = nft.balanceOf(msg.sender);
+        // require(nft.isGuardian[callerGuardianId],"caller is not a guardian!!");
+        require(!p.executed,"Project Proposal executed!");
+        SuspectedGuardian storage s = judgementProposals [callerGuardianId]; 
+        require(!s.isSuspected,"suspected guardian can't propose judgement.");
+        require(!j.isSuspected, "requested Guardian is already suspected.");
+        j.nftId = _guardianId;
+        j.proposalId = proposalId;
+        j.explanation = explanation;
+        j.isSuspected = true;
+        j.startTimestamp = block.timestamp;
+        j.endTimestamp = block.timestamp + minVotingTime;
+        emit JudgmentProposed(callerGuardianId, _guardianId, proposalId, explanation);
     }
+    
+    function voteJudgment(uint256 _guardianId, bool votesForGuardian) public {
+        uint256 callerGuardianId = nft.balanceOf(msg.sender);
+        // require(!nft.isGuardian[callerGuardianId],"guardian can't vote!!");
+        SuspectedGuardian storage j = judgementProposals [_guardianId];
+        require(j.isSuspected,"guardian is not suspected!!");
+        require(!j.judgementVoters[msg.sender],"Already voted!");
+        if (votesForGuardian) {
+            j.votesForGuardian++;
+        } else {
+            j.votesAgainstGuardian++;
+        }
+        emit JudgmentVoted(callerGuardianId, _guardianId, votesForGuardian);
+    }
+    
+    function processJudgment(uint256 _guardianId) public onlyOwner {
+        SuspectedGuardian storage j = judgementProposals [_guardianId];
+        require(j.isSuspected,"guardianId is not suspected!");
+        require(!j.isGuardianPunished,"Suspected Guardian already punished");
+        if (j.votesForGuardian > j.votesForGuardian) {
+            j.isGuardianPunished = true;
+        }
+    }
+    
 }
