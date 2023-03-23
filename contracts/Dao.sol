@@ -60,6 +60,7 @@ contract Dao is Ownable{
         mapping(address => bool) judgementVoters;    //keep track of which guardian vote for proposal
     }
     mapping(uint256 => SuspectedGuardian) public judgementProposals;
+    mapping(uint256 => bool) public blackListToUnlock;
     
     event JudgmentProposed(uint256 indexed callerNftId, uint256 indexed guardianNftId, uint256 indexed proposalId, string explanation);
     event JudgmentVoted(uint256 indexed callerNftId, uint256 indexed guardianNftId, bool indexed votesForSupport);
@@ -86,10 +87,15 @@ contract Dao is Ownable{
     function setVoteWeight(uint256 _voteWeight) public onlyOwner {
         voteWeight = _voteWeight;
     }
+    function isBlackListToUnlock(uint256 _guardianId) external view returns (bool) {
+        return blackListToUnlock[_guardianId];
+    }
 
     function createProposal(uint256 guardianId, address payable recipient, string memory projectName, string memory description, uint256 value, uint256 refundTime) public returns (uint256) {
-        // require(nft.isGuardian[guardianId],"only guardian can create proposal"]);
-        //TODO only guardian can create proposal
+        (bool success, bytes memory result) = address(nft).call(abi.encodeWithSignature("isGuardian(uint256)", guardianId));
+        require(success, "Call failed");
+        bool output = abi.decode(result, (bool));
+        require(output,"only guardian can create proposal");
         require(value <= MAX_PROPOSAL_THRESHOLD, "Proposal value too high");
         proposalCounter++;
         Proposal storage p = proposals[proposalCounter];
@@ -181,8 +187,16 @@ contract Dao is Ownable{
         SuspectedGuardian storage j = judgementProposals [_guardianId];
         Proposal storage p = proposals[proposalId];
         // require(nft.isGuardian[_guardianId],"guardian not exist!!");
+        (bool success, bytes memory result) = address(nft).call(abi.encodeWithSignature("isGuardian(uint256)", _guardianId));
+        require(success, "Call failed");
+        bool output = abi.decode(result, (bool));
+        require(output,"guardian not exist!!");
         uint256 callerGuardianId = nft.balanceOf(msg.sender);
         // require(nft.isGuardian[callerGuardianId],"caller is not a guardian!!");
+        (success, result) = address(nft).call(abi.encodeWithSignature("isGuardian(uint256)", callerGuardianId));
+        require(success, "Call failed");
+        output = abi.decode(result, (bool));
+        require(output,"caller is not a guardian!!");
         require(!p.executed,"Project Proposal executed!");
         SuspectedGuardian storage s = judgementProposals [callerGuardianId]; 
         require(!s.isSuspected,"suspected guardian can't propose judgement.");
@@ -199,6 +213,10 @@ contract Dao is Ownable{
     function voteJudgment(uint256 _guardianId, bool votesForGuardian) public {
         uint256 callerGuardianId = nft.balanceOf(msg.sender);
         // require(!nft.isGuardian[callerGuardianId],"guardian can't vote!!");
+        (bool success, bytes memory result) = address(nft).call(abi.encodeWithSignature("isGuardian(uint256)", callerGuardianId));
+        require(success, "Call failed");
+        bool output = abi.decode(result, (bool));
+        require(!output,"guardian can't vote!!");
         SuspectedGuardian storage j = judgementProposals [_guardianId];
         require(j.isSuspected,"guardian is not suspected!!");
         require(!j.judgementVoters[msg.sender],"Already voted!");
@@ -214,8 +232,12 @@ contract Dao is Ownable{
         SuspectedGuardian storage j = judgementProposals [_guardianId];
         require(j.isSuspected,"guardianId is not suspected!");
         require(!j.isGuardianPunished,"Suspected Guardian already punished");
-        if (j.votesForGuardian > j.votesForGuardian) {
+        if (j.votesForGuardian > j.votesAgainstGuardian) {
             j.isGuardianPunished = true;
+            blackListToUnlock[_guardianId] = true;
+            console.log("checkforBlacklist",blackListToUnlock[_guardianId]);
+        } else {
+            j.isSuspected = false;
         }
     }
     

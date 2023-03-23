@@ -6,6 +6,10 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 
+// interface IDao {
+//     function isBlackListToUnlock(uint256 _guardianId) external view returns (bool);
+// }
+
 contract ScarabNft is ERC721, Ownable {
     IERC20 public tokenContract;
     uint256 public nftConversionRate = 100;
@@ -22,7 +26,6 @@ contract ScarabNft is ERC721, Ownable {
     }
 
     function setDaoContractAddress(address _daoContract) public onlyOwner {
-        // require(isContract(_daoContract), "address must be a contract");
         require(_daoContract.code.length > 0,"Address must be a Contract");
         daoContractAddress = _daoContract;
     }
@@ -42,7 +45,7 @@ contract ScarabNft is ERC721, Ownable {
 
     function unlockTokens(uint256 _nftId) public {
         //TODO check the nftId holder doesn't have any active proposal
-        //TODO if guardian suspected, can't unlock
+        //TODO check nftId holder has not punished or suspected
         console.log("18");
         require(_exists(_nftId), "NFT does not exist");
         console.log("19");

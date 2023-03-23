@@ -143,7 +143,7 @@ describe("Scarab DAO", async () => {
         console.log("After- contract balance :- ",await ethers.provider.getBalance(addr1.address));
         
         //unlock tokens when proposal is not active
-        await nftContract.connect(addr1).unlockTokens(1, { gasLimit: 500000, });
+        await nftContract.connect(addr1).unlockTokens(1, { gasLimit: 800000, });
         console.log("after- scarab balance of addr1 : ",await scarabContract.connect(addr1).balanceOf(addr1.address));
     });
     it("5. should refund the amount on time", async () => {
@@ -258,14 +258,23 @@ describe("Scarab DAO", async () => {
         console.log("3.10");
         await network.provider.send("evm_increaseTime", [120]);
         console.log("Before- contract balance :- ",await ethers.provider.getBalance(addr1.address));
-        // await daoContract.executeProposal(1,{ gasLimit: 500000, });
-        // console.log("dao contract eth bal : ",await WETH.balanceOf(treasuryContract.address));
-        // console.log("After- contract balance :- ",await ethers.provider.getBalance(addr1.address));
-        // console.log("3.11");
         ///// proposal end time reach
-        await daoContract.proposeJudgment(1, 1, "Suspected");
+        await daoContract.connect(addr1).proposeJudgment(1, 1, "Suspected");
+        console.log("3.11");
+        console.log(await daoContract.judgementProposals(1));
         console.log("3.12");
-        console.log(await daoContract.judgementProposals[1]);
+        await scarabContract.mint(addr3.address, 10);
+        await daoContract.connect(addr3).voteJudgment(1, true);
+        await network.provider.send("evm_increaseTime", [120]);
+        console.log(await daoContract.judgementProposals(1));
+        await daoContract.processJudgment(1);
+        console.log("checkForBlacklist", await daoContract.isBlackListToUnlock(3));
         console.log("3.13");
+        console.log(await daoContract.judgementProposals(1));
+        console.log("3.14");
+        // suspected guardian try to unlock tokens
+        // await nftContract.connect(addr2).unlockTokens(1, { gasLimit: 500000, });
+        
+
     }); 
 }); 
