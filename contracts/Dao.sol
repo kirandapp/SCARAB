@@ -4,6 +4,7 @@
 pragma solidity ^0.8.0;
 
 import "./Treasury.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -28,6 +29,7 @@ contract Dao is Ownable{
     event Vote(uint256 indexed proposalId, address indexed voter, bool voteFor);
     event ProposalExecuted(uint256 indexed proposalId);
 
+    // enum status {open, executed, settled }
     struct Proposal {
         uint256 id; //proposal counter is the id
         uint256 guardianId;    //Name of the Guardian
@@ -37,6 +39,7 @@ contract Dao is Ownable{
         uint256 value;  //fund value  
         uint256 refundTime; //time of return the given value  
         bool executed;  //passed proposal
+        // status proposalStatus; //
         uint256 votesFor;   //counter track for favor votes
         uint256 votesAgainst;   //counter track for against votes
         uint256 startTimestamp; //timestamp for when the proposal was created
@@ -60,7 +63,7 @@ contract Dao is Ownable{
         mapping(address => bool) judgementVoters;    //keep track of which guardian vote for proposal
     }
     mapping(uint256 => SuspectedGuardian) public judgementProposals;
-    mapping(uint256 => bool) public blackListToUnlock;
+    mapping(uint256 => bool) private blackListToUnlock;
     
     event JudgmentProposed(uint256 indexed callerNftId, uint256 indexed guardianNftId, uint256 indexed proposalId, string explanation);
     event JudgmentVoted(uint256 indexed callerNftId, uint256 indexed guardianNftId, bool indexed votesForSupport);
@@ -97,7 +100,7 @@ contract Dao is Ownable{
         bool output = abi.decode(result, (bool));
         require(output,"only guardian can create proposal");
         require(value <= MAX_PROPOSAL_THRESHOLD, "Proposal value too high");
-        proposalCounter++;
+        proposalCounter++; 
         Proposal storage p = proposals[proposalCounter];
         p.id = proposalCounter;
         p.guardianId = guardianId;
@@ -107,6 +110,7 @@ contract Dao is Ownable{
         p.value = value;        
         p.refundTime = block.timestamp + refundTime;
         p.executed = false;
+        // p.proposalStatus = status.open;
         p.startTimestamp = block.timestamp;
         p.endTimestamp = block.timestamp + minVotingTime;
         emit NewProposal(proposalCounter, guardianId, recipient, projectName, description, value, refundTime, p.startTimestamp, p.endTimestamp);
@@ -156,6 +160,7 @@ contract Dao is Ownable{
         Treasury treasure = Treasury(treasury);
         console.log("11");
         p.executed = true;
+        // proposalStatus = status.executed;
         console.log("12");
         // treasure.fundTransfer(p.recipient, p.value);
         (bool success, ) = address(treasure).call{value: 0}(abi.encodeWithSignature("fundTransfer(address,uint256)", p.recipient, p.value));
@@ -172,6 +177,7 @@ contract Dao is Ownable{
         require(block.timestamp < p.refundTime, "refund time has gone!!");
         // uint256 refund = calculateRefund(p.value);
         require(msg.value >= p.value, "Not enough amount");
+        // proposalStatus = status.settled;
         // (bool success, ) = payable(address(this)).call{value: msg.value}("");
         // require(success, "Transfer Failed!");
     }

@@ -45,7 +45,10 @@ contract ScarabNft is ERC721, Ownable {
 
     function unlockTokens(uint256 _nftId) public {
         //TODO check the nftId holder doesn't have any active proposal
-        //TODO check nftId holder has not punished or suspected
+        (bool success, bytes memory result) = daoContractAddress.call(abi.encodeWithSignature("isBlackListToUnlock(uint256)",_nftId));
+        require(success,"call fail");
+        bool output = abi.decode(result, (bool));
+        require(!output,"Punished Guardian can't unlock token");
         console.log("18");
         require(_exists(_nftId), "NFT does not exist");
         console.log("19");

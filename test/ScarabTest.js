@@ -141,8 +141,14 @@ describe("Scarab DAO", async () => {
         await daoContract.executeProposal(1,{ gasLimit: 500000, });
         console.log("dao contract eth bal : a",await WETH.balanceOf(treasuryContract.address));
         console.log("After- contract balance :- ",await ethers.provider.getBalance(addr1.address));
+
+        ///////////set daoContractAddress in nftContract
+        await nftContract.setDaoContractAddress(daoContract.address);
+        expect(await nftContract.daoContractAddress()).to.equal(daoContract.address);
+        console.log("3.11");
         
         //unlock tokens when proposal is not active
+        nftContract.setDaoContractAddress()
         await nftContract.connect(addr1).unlockTokens(1, { gasLimit: 800000, });
         console.log("after- scarab balance of addr1 : ",await scarabContract.connect(addr1).balanceOf(addr1.address));
     });
@@ -197,18 +203,19 @@ describe("Scarab DAO", async () => {
         console.log("dao contract eth bal : a",await WETH.balanceOf(treasuryContract.address));
         console.log("After- contract balance :- ",await ethers.provider.getBalance(addr1.address));
 
-        await nftContract.connect(addr1).unlockTokens(1, { gasLimit: 500000, });
-        console.log("after- scarab balance of addr1 : ",await scarabContract.connect(addr1).balanceOf(addr1.address));
-
         ///////////set daoContractAddress in nftContract
         await nftContract.setDaoContractAddress(daoContract.address);
         expect(await nftContract.daoContractAddress()).to.equal(daoContract.address);
         console.log("3.11");
+       
         ///// return the fund amount
         console.log("contract balance before refund", await ethers.provider.getBalance(daoContract.address));
         await daoContract.connect(addr1).settlementFund(1, { value : ethers.utils.parseEther("0.000000000000011"), gasLimit: 50000 });
         console.log("contract balance after refund", await ethers.provider.getBalance(daoContract.address));
         console.log("3.12");
+        await nftContract.connect(addr1).unlockTokens(1, { gasLimit: 500000, });
+        console.log("after- scarab balance of addr1 : ",await scarabContract.connect(addr1).balanceOf(addr1.address));
+        
     }); 
     /////////////////////   JUDGEMENT
     it("6. should propose judgement and process", async () => {
@@ -248,6 +255,8 @@ describe("Scarab DAO", async () => {
         expect(await nftContract.connect(addr1).ownerOf(1)).to.equal(addr1.address);
         expect(await nftContract.connect(addr1).balanceOf(addr1.address)).to.equal(1);
         console.log("3.8");
+        await nftContract.setDaoContractAddress(daoContract.address);
+        expect(await nftContract.daoContractAddress()).to.equal(daoContract.address);
         let guardianId = await nftContract.balanceOf(addr1.address);
         await daoContract.connect(addr1).createProposal(guardianId, addr1.address,'pppp','dddd',10000, timestamp+300);
         console.log("3.9");
@@ -272,9 +281,13 @@ describe("Scarab DAO", async () => {
         console.log("3.13");
         console.log(await daoContract.judgementProposals(1));
         console.log("3.14");
+
+        ///////////set daoContractAddress in nftContract
+        await nftContract.setDaoContractAddress(daoContract.address);
+        expect(await nftContract.daoContractAddress()).to.equal(daoContract.address);
+        console.log("3.11");
         // suspected guardian try to unlock tokens
         // await nftContract.connect(addr2).unlockTokens(1, { gasLimit: 500000, });
-        
-
+        await expect(nftContract.connect(addr2).unlockTokens(1, { gasLimit: 500000, })).to.be.revertedWith("Punished Guardian can't unlock token");
     }); 
 }); 
