@@ -6,6 +6,13 @@ module.exports = {
   defaultNetwork: "hardhat",
   solidity: "0.8.18",
   networks: {
+
+    bsct: {
+      url: process.env.BSCT_URL || "",
+      accounts:
+        process.env.TEST_PRIVATE_KEY !== undefined ? [process.env.TEST_PRIVATE_KEY] : [],
+    },
+
     hardhat: {
       chainId: 31337,
       forking: {
@@ -22,4 +29,8 @@ module.exports = {
     },
   },
   allowUnlimitedContractSize: true,
+
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  },
 };
